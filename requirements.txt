@@ -1,0 +1,16 @@
+pandas==2.3.3
+numpy
+scipy
+scikit-learn
+geopandas
+shapely
+networkx
+matplotlib
+seaborn
+folium
+branca
+requests
+openpyxl
+contextily
+adjustText
+jupyter

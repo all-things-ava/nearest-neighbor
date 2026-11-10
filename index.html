@@ -1,0 +1,422 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>One Rung Up</title>
+<meta name="description" content="The first data analysis behind Bridging NYC: how long it takes, by subway, to reach a New York City neighborhood one rung higher on the mobility ladder.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* Layout: single 680px reading column with a sticky contents rail on desktop, matching Bridging NYC. Light-only, as on the companion page. */
+  :root { --ink:#111418; --accent:#2563eb; --muted:#5b6472; --line:#e5e8ec; --chip:#f1f4f8;
+          --bg:#ffffff; --soft:#333a44; --ai:#7c3aed; --ai-bg:#f6f3fe; --ai-line:#d9ccfb;
+          --r1:#67001f; --r2:#f7b799; --r3:#a7d0e4; --r4:#053061; color-scheme:light; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink);
+         font-family:"Inter","Segoe UI",system-ui,-apple-system,sans-serif;
+         font-size:17px; line-height:1.7; }
+  .page { max-width:680px; margin:0 auto; padding-block:72px 96px;
+          padding-left:max(24px, env(safe-area-inset-left, 0px)); padding-right:max(24px, env(safe-area-inset-right, 0px)); }
+  .kicker { text-transform:uppercase; letter-spacing:.12em; font-size:12px; color:var(--accent); font-weight:700; margin-bottom:14px; }
+  h1 { font-size:36px; line-height:1.15; margin:0 0 14px; font-weight:800; letter-spacing:-0.02em; text-wrap:balance; }
+  .byline { color:var(--muted); font-size:15px; margin-bottom:28px; }
+  .toc { background:var(--chip); border-radius:12px; padding:16px 22px; font-size:14.5px; margin-bottom:48px; }
+  .toc b { display:block; font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin-bottom:6px; }
+  .toc a { color:var(--accent); text-decoration:none; margin-right:14px; white-space:nowrap; }
+  .toc .gh { margin-top:12px; padding-top:12px; border-top:1px solid var(--line); }
+  .toc .gh a { color:var(--ink); font-weight:600; display:inline-block; }
+  @media (min-width:1000px) {
+    .page { max-width:1000px; display:grid; grid-template-columns:212px minmax(0,680px); gap:48px; align-items:start; }
+    .content { min-width:0; }
+    .toc { position:sticky; top:calc(36px + env(safe-area-inset-top, 0px)); background:none; border-radius:0; padding:2px 0 0; margin:0; }
+    .toc a { display:block; margin:0 0 9px; color:var(--muted); white-space:normal; }
+    .toc a:hover { color:var(--accent); }
+    .toc a.active { color:var(--accent); font-weight:600; }
+    .toc a.sub { padding-left:12px; font-size:13.5px; }
+  }
+  h2 { font-size:22px; margin:48px 0 12px; font-weight:700; letter-spacing:-0.01em; text-wrap:balance; }
+  h3 { font-size:17px; margin:32px 0 8px; font-weight:700; text-wrap:balance; }
+  h2 + h3 { margin-top:12px; }
+  p { margin:0 0 18px; }
+  ul, ol { margin:0 0 18px; padding-left:24px; }
+  li { margin-bottom:6px; }
+  a { color:var(--accent); }
+  a:focus-visible { outline:2px solid var(--accent); outline-offset:2px; border-radius:3px; }
+  code { background:var(--chip); padding:2px 6px; border-radius:5px; font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:14.5px; }
+  sup a { color:var(--accent); text-decoration:none; font-weight:600; }
+  .abstract { border-left:3px solid var(--accent); padding-left:18px; color:var(--soft); }
+
+  /* Prequel banner */
+  .prequel { border:1px solid var(--line); border-radius:12px; padding:16px 20px; margin:0 0 36px; font-size:15px; color:var(--soft); background:var(--bg); }
+  .prequel b { color:var(--ink); }
+  .prequel .label { display:block; font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); font-weight:700; margin-bottom:4px; }
+
+  /* Process arc: a real sequence, so it is numbered */
+  .arc { list-style:none; padding:0; margin:28px 0 8px; display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:10px; counter-reset:step; }
+  .arc li { margin:0; padding:12px 12px 14px; border-radius:10px; background:var(--chip); font-size:13.5px; line-height:1.45; color:var(--muted); min-width:0; position:relative; }
+  .arc li::before { counter-increment:step; content:counter(step); display:inline-grid; place-items:center; width:22px; height:22px; border-radius:50%;
+                    background:var(--bg); color:var(--ink); font-weight:700; font-size:12px; margin-bottom:6px; border:1px solid var(--line); }
+  .arc li b { display:block; color:var(--ink); font-size:14px; margin-bottom:2px; }
+  .arc li.here { background:var(--ink); color:#c9d0da; }
+  .arc li.here b { color:#fff; }
+  .arc li.here::before { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .arc li.ai { background:var(--ai-bg); }
+  .arc a { color:inherit; }
+  .arc-caption { font-size:14px; color:var(--muted); margin:0 0 18px; }
+  @media (max-width:620px) { .arc { grid-template-columns:repeat(2, minmax(0,1fr)); } }
+
+  blockquote { margin:24px 0; padding:2px 0 2px 18px; border-left:3px solid var(--line); color:var(--soft); }
+  blockquote p { margin:0 0 6px; }
+  blockquote cite { font-style:normal; font-size:14px; color:var(--muted); }
+
+  figure { margin:28px 0; }
+  figure img { width:100%; height:auto; border-radius:12px; border:1px solid var(--line); display:block; background:#fff; }
+  .fig-pair { display:grid; grid-template-columns:minmax(0,1417fr) minmax(0,1521fr); gap:20px; margin:28px 0 10px; align-items:start; }
+  .fig-pair figure { margin:0; min-width:0; }
+  .fig-pair figure.panel img { width:100%; max-width:none; }
+  @media (max-width:560px) { .fig-pair { grid-template-columns:1fr; } }
+  figure.panel img { border:0; border-radius:0; max-width:460px; margin:0 auto; }
+  .tcap { font-size:14px; color:var(--muted); }
+  .tcap b { color:var(--ink); }
+  /* Click-to-enlarge viewer for static figures */
+  figure img.zoomable { cursor:zoom-in; }
+  .lightbox { position:fixed; inset:0; z-index:50; background:rgba(17,20,24,0.92); display:flex; flex-direction:column;
+              padding-top:env(safe-area-inset-top, 0px); padding-bottom:env(safe-area-inset-bottom, 0px); }
+  .lightbox[hidden] { display:none; }
+  .lightbox-bar { display:flex; justify-content:space-between; align-items:center; gap:12px; color:#e9edf2; font-size:13.5px;
+                  padding-block:10px; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); }
+  .lightbox-bar button { font:inherit; font-weight:600; color:#111418; background:#fff; border:0; border-radius:999px; padding:6px 14px; cursor:pointer; }
+  .lightbox-bar button:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+  .lightbox-stage { flex:1; overflow:auto; display:flex; align-items:flex-start; justify-content:center; padding:0 16px 24px; }
+  .lightbox-stage img { max-width:100%; height:auto; background:#fff; border-radius:6px; cursor:zoom-in; }
+  .lightbox.zoomed .lightbox-stage { justify-content:flex-start; }
+  .lightbox.zoomed .lightbox-stage img { max-width:none; width:2400px; cursor:zoom-out; }
+  figcaption { font-size:14px; color:var(--muted); margin-top:10px; }
+  figcaption b { color:var(--ink); }
+  .map { position:relative; width:100%; aspect-ratio:4 / 3; max-width:100%; border-radius:12px; border:1px solid var(--line); overflow:hidden; background:var(--chip); }
+  .map iframe { position:absolute; inset:0; width:100%; height:100%; border:0; }
+  .map-open { font-size:13.5px; font-weight:600; text-decoration:none; }
+  .live { display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--accent);
+          border:1px solid var(--accent); border-radius:999px; padding:0 8px; margin-right:6px; vertical-align:1px; }
+
+  .tablewrap { overflow-x:auto; margin:0 0 18px; }
+  table { width:100%; border-collapse:collapse; font-size:14.5px; font-variant-numeric:tabular-nums; }
+  th { text-align:left; font-size:12.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); font-weight:600; }
+  th, td { padding:9px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
+  td.num, th.num { text-align:right; }
+  .sw { display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:8px; vertical-align:0; }
+
+  .stat-row { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:10px; margin:22px 0 26px; }
+  .stat { border-top:2px solid var(--ink); padding-top:8px; min-width:0; }
+  .stat .v { font-size:28px; font-weight:800; letter-spacing:-0.02em; line-height:1.1; font-variant-numeric:tabular-nums; }
+  .stat .k { font-size:13.5px; color:var(--muted); line-height:1.4; margin-top:4px; }
+  @media (max-width:520px) { .stat-row { grid-template-columns:1fr; } }
+
+  .deserts { columns:2; column-gap:28px; font-size:15px; padding-left:20px; }
+  .deserts li { break-inside:avoid; }
+  .deserts span { color:var(--muted); font-size:13.5px; }
+  @media (max-width:520px) { .deserts { columns:1; } }
+
+  /* AI-generated findings panel */
+  .ai-panel { border:1px dashed var(--ai-line); background:var(--ai-bg); border-radius:12px; padding:20px 22px 6px; margin:24px 0 28px; }
+  .ai-tag { display:inline-flex; gap:8px; align-items:center; font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:.08em;
+            color:var(--ai); background:var(--bg); border:1px solid var(--ai-line); border-radius:999px; padding:3px 10px; margin-bottom:12px; }
+  .ai-panel h3 { margin-top:18px; }
+  .ai-panel h3:first-of-type { margin-top:4px; }
+  .ai-panel p, .ai-panel li { font-size:15.5px; }
+  .ai-panel table { font-size:14px; background:var(--bg); }
+  .ai-note { font-size:13.5px; color:var(--muted); }
+
+  .repo { display:flex; gap:10px; flex-wrap:wrap; margin:16px 0 8px; }
+  .repo a { background:var(--ink); color:#fff; text-decoration:none; font-size:14px; font-weight:600; padding:9px 16px; border-radius:999px; }
+  .repo a.alt { background:var(--chip); color:var(--ink); }
+  .notes, .datasrc { margin-top:56px; border-top:1px solid var(--line); padding-top:20px; }
+  .notes h2, .datasrc h2 { font-size:15px; margin:0 0 12px; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; }
+  .notes ol { padding-left:20px; font-size:14.5px; color:var(--muted); }
+  .notes li { margin-bottom:8px; }
+  .datasrc p { font-size:14.5px; color:var(--muted); margin-bottom:10px; }
+  .datasrc h3 { font-size:16px; margin:26px 0 8px; }
+  @media (prefers-reduced-motion:no-preference) { html { scroll-behavior:smooth; } }
+</style>
+
+</head>
+<body>
+<div class="page">
+
+  <nav class="toc" aria-label="Contents">
+    <b>Contents</b>
+    <a href="#motivation">Motivation</a>
+    <a href="#approach">Approach</a>
+    <a href="#findings">Findings</a>
+    <a class="sub" href="#nearest">The nearest neighbor</a>
+    <a class="sub" href="#next-rung">Most origins reach a step up in 30 minutes</a>
+    <a class="sub" href="#more-time">Triple the destinations at 45 minutes</a>
+    <a class="sub" href="#hubs">All destination hubs are found in Manhattan</a>
+    <a class="sub" href="#deserts">Nine edge neighborhoods without a step up</a>
+    <a href="#ai">Asking AI</a>
+    <a href="#evolution">From analysis to agentic workflow</a>
+    <a href="#notes">Notes</a>
+    <a href="#supplementary">Supplementary Materials</a>
+    <div class="gh"><a href="https://github.com/all-things-ava/nearest-neighbor">GitHub ↗</a></div>
+  </nav>
+
+  <main class="content">
+
+  <div class="kicker">Portfolio · Prequel</div>
+  <h1>One Rung Up: In New York City, your most valuable connections are rarely next door.</h1>
+  <div class="byline">Ava Grossman · 2026</div>
+
+  <div class="prequel">
+    <span class="label">Prequel to Bridging NYC</span>
+    Below you will find the analysis and visualizations that inspired <a href="https://all-things-ava.github.io/bridging-nyc/"><b>Bridging NYC: An Agentic Prototype for Navigating the Opportunity Landscape</b></a>. I recommend reading Bridging NYC for context around bridging networks and social mobility.
+  </div>
+
+  <h2 id="motivation">Motivation</h2>
+  <p>Reading Alex "Sandy" Pentland's <em>Shared Wisdom</em>, I was struck by a finding he draws from the Opportunity Atlas: when predicting children's life outcomes, the characteristics of the surrounding neighborhood matter most. Approximately one-quarter of this neighborhood effect is "locked in" by the time a child enters kindergarten, and approximately half is in place by fifth grade.<sup><a href="#fn1" id="r1">1</a>,<a href="#fn2" id="r2">2</a></sup></p>
+  <p>I paired this with a second idea: bridging networks, the ties that connect one community to another, bringing pools of information, perspectives, and new opportunities.<sup><a href="#fn3" id="r3">3</a></sup> In his book, Pentland states:</p>
+  <blockquote>
+    <p>"The most effective bridges are to communities that are just a little bit better off than your community. In other words, to help the lowest-income communities, the most useful connections are to communities that are one rung higher on the socioeconomic ladder."<sup><a href="#fn4" id="r4">4</a></sup></p>
+  </blockquote>
+  <p>Putting the two together, I wanted to see how it applied to New York City's 197 residential neighborhoods by asking three questions of each neighborhood:</p>
+  <ol>
+    <li>Which neighborhood is nearest (by MTA subway)?</li>
+    <li>What rung is that neighborhood on, compared with yours?</li>
+    <li>Is it a single step up?</li>
+  </ol>
+  <p class="abstract">My analysis found that usually, it's not. For 69% of neighborhoods with a higher rung to reach, the nearest neighborhood by subway is in the same rung or a lower one. Most can still reach a step up within half an hour, but nine neighborhoods on the city's edges cannot reach one within an hour at all.</p>
+
+
+
+  <h2 id="approach">Approach</h2>
+  <p>The analysis and visualizations below have two primary parts: a social mobility ladder and subway travel times. The neighborhood origin-destination dataset built here, composed of social mobility scores, rungs, and travel times, later became the knowledge base for the agent workflow in Bridging NYC. For the full data pipeline (data sources, transformations, and equations), please see that project's <a href="https://all-things-ava.github.io/bridging-nyc/#methods">Methods</a> and <a href="https://all-things-ava.github.io/bridging-nyc/#appendix">Appendix</a>. In short:</p>
+  <ul>
+    <li><b>Social mobility ladder.</b> Each neighborhood's score is the Opportunity Atlas measure of where children from lower-income families (parents at the 25th income percentile) end up in the national income distribution as adults, weighted by 2020 population. K-means clustering on that score gives four rungs, the smallest number that explains at least 90% of the variance (R² = 0.93). The score range and size of each rung are shown in <a href="https://all-things-ava.github.io/bridging-nyc/#appendix">Figure 7 of Bridging NYC</a>.</li>
+    <li><b>Subway travel times.</b> Travel time between every pair of neighborhoods comes from a graph of the MTA subway schedule (GTFS), plus walking from each neighborhood to its five nearest stations.</li>
+  </ul>
+  <p>Rung 4 has no higher rung to reach, so the analysis below covers the 145 neighborhoods in rungs 1 to 3.</p>
+
+  <h2 id="findings">Findings</h2>
+  <h3 id="nearest">The nearest neighbor is usually not one rung up</h3>
+  <p>For 69% of neighborhoods in rungs 1 to 3, the nearest neighborhood by subway is in the same rung or a lower one. Only about a quarter are nearest to a neighborhood exactly one rung higher. Proximity mostly reconnects people with places like their own.</p>
+  <p>Explore this for yourself in Figure 1. Use the layers menu in the top right corner to show or hide each group, zoom in and out across New York City, and hover over any line to see quick facts about the two neighborhoods it connects: their names, rungs, mobility scores, and the subway travel time between them.</p>
+
+  <figure>
+    <div class="map"><iframe src="figures/all_next_nearest_nbhd_3groups.html" title="Interactive map of each neighborhood linked to its nearest neighborhood by subway, colored by rung change" loading="lazy"></iframe></div>
+    <figcaption><span class="live">Live</span><b>Figure 1.</b> Each origin linked to its nearest neighborhood by subway, grouped by rung change. Hover over a line for the origin, destination, rungs, scores, and travel time. <a class="map-open" href="figures/all_next_nearest_nbhd_3groups.html" target="_blank" rel="noopener">Open full screen ↗</a></figcaption>
+  </figure>
+
+  <p>The pattern holds at every rung, and it is strongest for rung 3. Only 7 of the 42 rung 3 neighborhoods have a rung 4 neighborhood as their nearest neighbor.</p>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>Origin rung</th><th class="num">Total count of neighborhoods</th><th class="num">Neighborhoods in same rung or lower</th><th class="num">Neighborhoods one rung higher</th><th class="num">Neighborhoods two or more rungs higher</th></tr></thead>
+    <tbody>
+      <tr><td><span class="sw" style="background:var(--r1)"></span>Rung 1</td><td class="num">58</td><td class="num">39 (67%)</td><td class="num">15 (26%)</td><td class="num">4 (7%)</td></tr>
+      <tr><td><span class="sw" style="background:var(--r2)"></span>Rung 2</td><td class="num">45</td><td class="num">26 (58%)</td><td class="num">15 (33%)</td><td class="num">4 (9%)</td></tr>
+      <tr><td><span class="sw" style="background:var(--r3)"></span>Rung 3</td><td class="num">42</td><td class="num">35 (83%)</td><td class="num">7 (17%)</td><td class="num">0</td></tr>
+      <tr><td><b>Total</b></td><td class="num"><b>145</b></td><td class="num"><b>100 (69%)</b></td><td class="num"><b>37 (26%)</b></td><td class="num"><b>8 (6%)</b></td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="tcap"><b>Table 1.</b> How each neighborhood's nearest neighbor by subway compares with its own rung, for the 145 neighborhoods in rungs 1 to 3.</p>
+  <p>Distance is not what separates these groups. In every group the nearest neighborhood is a short ride, with a median of 11 to 14 minutes. Means run higher (15 to 23 minutes) because a few origins have long trips (Figure 2). What differs is the direction of the trip. Where the nearest neighborhood is one rung up, the median gain in mobility score is 0.05, roughly the distance between neighboring rungs. Where it is the same rung or lower, the median change is slightly negative (Figure 3).</p>
+
+  <div class="fig-pair">
+    <figure class="panel">
+      <img src="figures/nearest_travel_time.png" alt="Bar chart of median and mean travel time to the nearest neighborhood for each group, with medians between 10.7 and 13.8 minutes." loading="lazy">
+      <figcaption><b>Figure 2.</b> Median and mean subway travel time to the nearest neighborhood, by group.</figcaption>
+    </figure>
+    <figure class="panel">
+      <img src="figures/nearest_score_change.png" alt="Bar chart of median score change from origin to nearest neighborhood: -0.01 for same rung or lower, 0.05 for one rung up, 0.09 for two or more rungs up." loading="lazy">
+      <figcaption><b>Figure 3.</b> Median change in mobility score from origin to nearest neighborhood (destination minus origin), by group.</figcaption>
+    </figure>
+  </div>
+  <p class="tcap">In Figures 2 and 3, <b>delta_rung</b> is the destination's rung minus the origin's rung: delta_rung &le; 0 is the same rung or lower, delta_rung = 1 is one rung up, delta_rung &gt; 1 is two or more rungs up.</p>
+
+
+  <h3 id="next-rung">Most neighborhoods can still reach one rung up within 30 minutes</h3>
+  <p>Knowing that a neighborhood's nearest neighbor most likely will not be the desired one-rung step up, I asked: how long would it take to get to the next rung? The result is more encouraging than Figure 1 and Table 1. Most low-rung neighborhoods can reach a step-up neighborhood within 30 minutes: 86% of rung 1 neighborhoods and 71% of rungs 2 and 3. The median gain in mobility score from that one step is about 0.05 at every rung, so the step is a similar size wherever you start.</p>
+
+  <figure>
+    <img src="figures/next_rung_travel_by_origin_rung.png" alt="Two bar charts by origin rung: proportion of origin neighborhoods that can reach the next rung within 30 minutes (86%, 71%, 71%), and median and mean travel time to the next rung." loading="lazy">
+    <figcaption><b>Figure 4.</b> Reaching the next rung up, by origin rung.</figcaption>
+  </figure>
+
+  <p>The gap between median and mean travel time for rungs 2 and 3 points to a long tail of hard-to-reach neighborhoods. Sorting every origin by its travel time to the next rung shows a smooth curve up to about 45 minutes, then a sharp climb. A small group of neighborhoods needs over an hour, and Rosedale needs almost two.</p>
+
+  <figure>
+    <img src="figures/travel_time_all_origins_1_rung.png" alt="Bar chart of travel time to the nearest one-rung-higher neighborhood for all 145 origins, sorted from fastest to slowest, with reference lines at 15, 30 and 60 minutes." loading="lazy">
+    <figcaption><b>Figure 5.</b> Travel time to the nearest neighborhood one rung higher, for every origin in rungs 1 to 3, colored by origin rung. Dashed lines mark 15, 30, and 60 minutes. Click the chart to enlarge it and read the neighborhood names.</figcaption>
+  </figure>
+
+  <p>Geography explains most of that tail. Among rung 1 and 2 neighborhoods, every one in Manhattan reaches a step up within 30 minutes. In Queens, fewer than half do, and 29% need over an hour. Staten Island has only five low-rung neighborhoods, but two of them need over an hour.</p>
+
+  <figure>
+    <img src="figures/next_rung_travel_by_boro_rung_1_2.png" alt="Stacked horizontal bars by borough showing the share of rung 1 and 2 neighborhoods by travel time to the nearest step-up neighborhood." loading="lazy">
+    <figcaption><b>Figure 6.</b> Share of rung 1 and 2 neighborhoods by travel time to the nearest neighborhood one rung higher, by borough.</figcaption>
+  </figure>
+
+  <h3 id="more-time">From 30 to 45 minutes, one-rung-higher destinations triple</h3>
+  <p>In practice, how far someone is willing to travel decides which neighborhoods are open to them. So I asked how the number of neighborhoods one rung higher changes as the time budget grows from 30 to 45 minutes. Those extra 15 minutes make a large difference. Within 30 minutes, a typical rung 1 neighborhood can reach two or three rung 2 neighborhoods. Within 45 minutes, it can reach seven or eight. Across all 145 neighborhoods, the share with at least three options nearly doubles, from 41% to 75%, and the share with no option at all is cut in half, from 23% to 11%.</p>
+
+  <figure>
+    <img src="figures/next_rung_options_by_time.png" alt="Line chart of the median number of neighborhoods one rung higher reachable within 15 to 90 minutes, by origin rung. Rungs 1 and 2 rise from about 2 options at 30 minutes to about 7 at 45 minutes; rung 3 rises from 1 to 4.5." loading="lazy">
+    <figcaption><b>Figure 7.</b> Median number of neighborhoods one rung higher that each origin can reach, by origin rung and time budget. The shaded band marks the step from 30 to 45 minutes.</figcaption>
+  </figure>
+
+  <h3 id="hubs">The most common one-rung-up destinations are in Manhattan</h3>
+  <p>More time opens up more destinations, but which ones? Setting time aside, I asked which one-rung-higher neighborhoods come up most often. I gave every neighborhood in rungs 1 to 3 a shortlist: its 10 closest neighborhoods exactly one rung higher, ranked by subway travel time, with no time limit. I then counted how many shortlists each destination appears on. The 10 destinations that appear most often are all in Manhattan, and they are the hubs shown in Figure 8. Together they appear on the shortlists of 124 of the 145 neighborhoods. East Midtown-Turtle Bay and the Financial District-Battery Park City each appear on 36 shortlists, and Hell's Kitchen on 35.</p>
+  <p>Explore the hubs in Figure 8. Use the layers menu in the top right corner to turn each destination's lines on or off, click a destination's marker for its number of origins and median trip, and hover over any line to see the origin, the destination, and the subway travel time between them.</p>
+
+  <figure>
+    <div class="map"><iframe src="figures/top10_attractors_filterable.html" title="Interactive map of the ten most common step-up destinations and the origins that reach them" loading="lazy"></iframe></div>
+    <figcaption><span class="live">Live</span><b>Figure 8.</b> The 10 destinations that appear most often on neighborhoods' shortlists of their 10 closest one-rung-higher neighborhoods, and the origins that list them. Use the layers menu to show each destination's origins. <a class="map-open" href="figures/top10_attractors_filterable.html" target="_blank" rel="noopener">Open full screen ↗</a></figcaption>
+  </figure>
+
+  <h3 id="deserts">The subway leaves nine edge neighborhoods without a step up within an hour</h3>
+  <p>The hubs showed where step-up trips lead. Next I turned to the neighborhoods those trips leave behind: which ones cannot reach any neighborhood one rung higher within 60 minutes by subway? Nine met that bar, and all of them sit on the edges of the city: two in the northwest Bronx, five in southeast Queens, and two on Staten Island's North Shore.</p>
+
+  <ul class="deserts">
+    <li>Kingsbridge-Marble Hill <span>Bronx · rung 3</span></li>
+    <li>Riverdale-Spuyten Duyvil <span>Bronx · rung 3</span></li>
+    <li>Cambria Heights <span>Queens · rung 2</span></li>
+    <li>Laurelton <span>Queens · rung 1</span></li>
+    <li>Springfield Gardens (South)-Brookville <span>Queens · rung 2</span></li>
+    <li>Rosedale <span>Queens · rung 2</span></li>
+    <li>Far Rockaway-Bayswater <span>Queens · rung 1</span></li>
+    <li>Port Richmond <span>Staten Island · rung 2</span></li>
+    <li>Mariner's Harbor-Arlington-Graniteville <span>Staten Island · rung 2</span></li>
+  </ul>
+
+  <figure>
+    <div class="map"><iframe src="figures/origin_deserts_circles_only.html" title="Interactive map of the nine neighborhoods with no higher-rung neighborhood within 60 minutes by subway" loading="lazy"></iframe></div>
+    <figcaption><span class="live">Live</span><b>Figure 9.</b> Transit deserts: origins with no neighborhood one rung higher within 60 minutes by subway. Each dot is an origin, colored by its own rung. <a class="map-open" href="figures/origin_deserts_circles_only.html" target="_blank" rel="noopener">Open full screen ↗</a></figcaption>
+  </figure>
+
+  <h2 id="ai">Asking AI</h2>
+  <p>My first use of AI in this project was simple. Long before it became part of the agentic recommendation workflow in Bridging NYC, I asked whether it would recommend new MTA subway stops to serve the deserts.</p>
+  <p>It went further and extended my work. It connected each desert to its nearest step-up neighbor and looked for public transit options other than the subway that could link them. Its findings are below.</p>
+
+  <figure>
+    <div class="map"><iframe src="findings/origin_deserts_station_gaps_Vf.html" title="Interactive map of station gaps: walking time from each isolated neighborhood to its nearest subway station" loading="lazy"></iframe></div>
+    <figcaption><span class="live">Live</span><b>Figure 10.</b> The nine isolated origins and their nearest neighborhood one rung higher, mapped in the same AI session as the findings below. Solid lines show the subway trip from each origin to its nearest step-up neighborhood. <a class="map-open" href="findings/origin_deserts_station_gaps_Vf.html" target="_blank" rel="noopener">Open full screen ↗</a></figcaption>
+  </figure>
+
+  <div class="ai-panel" role="note" aria-label="AI-generated findings">
+    <span class="ai-tag">AI-generated</span>
+
+    <h3>Main finding</h3>
+    <p>None of the nine neighborhoods are isolated once MTA buses are counted. Every one reaches a neighborhood one rung up within an hour at the standard $3 fare. The neighborhoods farthest from a station improve the most:</p>
+    <div class="tablewrap">
+    <table>
+      <thead><tr><th>Neighborhood</th><th class="num">Subway only</th><th class="num">With buses</th></tr></thead>
+      <tbody>
+        <tr><td>Rosedale</td><td class="num">109 min</td><td class="num">53 min</td></tr>
+        <tr><td>Springfield Gardens (South)-Brookville</td><td class="num">102 min</td><td class="num">43 min</td></tr>
+        <tr><td>Mariner's Harbor</td><td class="num">93 min</td><td class="num">34 min</td></tr>
+        <tr><td>Riverdale-Spuyten Duyvil</td><td class="num">77 min</td><td class="num">59 min</td></tr>
+        <tr><td>Port Richmond</td><td class="num">72 min</td><td class="num">25 min</td></tr>
+        <tr><td>Cambria Heights</td><td class="num">68 min</td><td class="num">27 min</td></tr>
+        <tr><td>Laurelton</td><td class="num">67 min</td><td class="num">22 min</td></tr>
+        <tr><td>Kingsbridge-Marble Hill</td><td class="num">66 min</td><td class="num">46 min</td></tr>
+        <tr><td>Far Rockaway-Bayswater</td><td class="num">61 min</td><td class="num">46 min</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p class="ai-note">Subway-only times are from my dataset. Bus times are from AI: averaging weekday departures from 7 to 9 AM.</p>
+
+    <h3>Other modes added little</h3>
+    <p>The LIRR mainly helps Rosedale (53 to 42 minutes), and Springfield Gardens and Far Rockaway by a minute or two, at a higher fare. Metro-North, ferries, and express buses change nothing for the nine.</p>
+
+    <h3>What the data supports for city design</h3>
+    <ul>
+      <li><b>Faster, more frequent buses, rather than new subway stations, on specific routes.</b> For the seven neighborhoods with no subway station within 800 meters (Cambria Heights, Laurelton, Mariner's Harbor, Port Richmond, Riverdale-Spuyten Duyvil, Rosedale, and Springfield Gardens (South)-Brookville), the bus is what connects them to the next rung. Bus lanes, signal priority, and better frequency on those bus routes would help directly.</li>
+      <li><b>Better east-west links in the Bronx.</b> Riverdale (59 min) and Kingsbridge (46 min) stay the slowest even with every mode included. Both rely on the Bx12 Select Bus along Fordham Road to reach Morris Park. This is the one place where the barrier is the shape of the network rather than missing stations.</li>
+    </ul>
+
+    <h3>What the data does not support</h3>
+    <p>New subway stations for these nine neighborhoods. With buses included, their trips to the next rung are 22 to 59 minutes, so new stations are not justified on this measure alone.</p>
+    <p class="ai-note">Generated by a large language model from the outputs of this analysis.</p>
+  </div>
+
+  <h2 id="evolution">From analysis to agentic workflow</h2>
+  <p>The deserts in this analysis were defined by an arbitrary travel time threshold of 60 minutes. As noted earlier, how far someone is willing to travel decides which neighborhoods are open to them, and that limit differs from person to person. That idea of personal agency shifted how I ultimately decided to use AI. Between this analysis and <a href="https://all-things-ava.github.io/bridging-nyc/">Bridging NYC</a>, the role of AI changed in the following ways:</p>
+  <ul>
+    <li><b>From the analyst's question to the user's.</b> In this analysis, I asked AI a city-level question as an analyst. In Bridging NYC, it answers a personal request: given where a user is and how long they're willing to travel, which neighborhoods one rung higher are within reach?</li>
+    <li><b>From open-ended to grounded.</b> In this analysis, the model reasoned freely over my outputs. In Bridging NYC, its recommendation is grounded in the knowledge base built from this analysis.</li>
+  </ul>
+
+  <div class="notes" id="notes">
+    <h2>Notes</h2>
+    <ol>
+      <li id="fn1">Alex Pentland, <em>Shared Wisdom: Cultural Evolution in the Age of AI</em> (Cambridge, MA: MIT Press, 2025), 43. <a href="#r1">↩</a></li>
+      <li id="fn2">Raj Chetty et al., "The Opportunity Atlas: Mapping the Childhood Roots of Social Mobility," NBER Working Paper 25147 (2018), <a href="https://doi.org/10.3386/w25147">https://doi.org/10.3386/w25147</a>; data accessed via "Neighborhoods Matter," Opportunity Insights, accessed March 3, 2026, <a href="https://opportunityinsights.org/neighborhoods/">https://opportunityinsights.org/neighborhoods/</a>. <a href="#r2">↩</a></li>
+      <li id="fn3">Pentland, <em>Shared Wisdom</em>, 39. <a href="#r3">↩</a></li>
+      <li id="fn4">Pentland, <em>Shared Wisdom</em>, 44. <a href="#r4">↩</a></li>
+    </ol>
+  </div>
+
+  <div class="datasrc" id="supplementary">
+    <h2>Supplementary Materials</h2>
+    <h3>Notebook and data</h3>
+    <p>The notebook (<code>Lovethyneighbor.ipynb</code>) runs end to end from raw data to every figure on this page. The raw inputs, the full results table (<code>all_analysis.csv</code>), and the interactive maps are in the repository.</p>
+    <div class="repo">
+      <a href="https://github.com/all-things-ava/nearest-neighbor">View code on GitHub</a>
+      <a class="alt" href="https://all-things-ava.github.io/bridging-nyc/">Continue to Bridging NYC</a>
+    </div>
+    <h3>Data sources</h3>
+    <p>Opportunity Atlas, HUD 2010 to 2020 Census Tract Crosswalk, 2020 Decennial Census population, NYC Department of City Planning 2020 Neighborhood Tabulation Areas, and the MTA subway GTFS feed. Full citations and transformations are in the <a href="https://all-things-ava.github.io/bridging-nyc/#appendix">Bridging NYC appendix</a> and its <a href="https://all-things-ava.github.io/bridging-nyc/#supplementary">Supplementary Materials</a>.</p>
+  </div>
+
+  </main>
+</div>
+<div class="lightbox" id="lightbox" hidden role="dialog" aria-modal="true" aria-label="Enlarged figure">
+  <div class="lightbox-bar"><span id="lightbox-hint">Click the image to zoom in. Scroll to move around.</span><button type="button" id="lightbox-close">Close</button></div>
+  <div class="lightbox-stage" id="lightbox-stage"><img id="lightbox-img" alt=""></div>
+</div>
+<script>
+(function () {
+  var box = document.getElementById('lightbox'), img = document.getElementById('lightbox-img'),
+      hint = document.getElementById('lightbox-hint'), closeBtn = document.getElementById('lightbox-close'), last = null;
+  function open(src, alt) {
+    img.src = src; img.alt = alt || ''; box.classList.remove('zoomed');
+    hint.textContent = 'Click the image to zoom in. Scroll to move around.';
+    box.hidden = false; document.body.style.overflow = 'hidden'; closeBtn.focus();
+  }
+  function close() { box.hidden = true; document.body.style.overflow = ''; if (last) last.focus(); }
+  document.querySelectorAll('figure img').forEach(function (el) {
+    el.classList.add('zoomable'); el.tabIndex = 0; el.setAttribute('role', 'button');
+    el.setAttribute('aria-label', 'Enlarge: ' + (el.alt || 'figure'));
+    el.addEventListener('click', function () { last = el; open(el.currentSrc || el.src, el.alt); });
+    el.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); last = el; open(el.currentSrc || el.src, el.alt); } });
+  });
+  img.addEventListener('click', function () {
+    var z = box.classList.toggle('zoomed');
+    hint.textContent = z ? 'Click the image to fit it to the screen.' : 'Click the image to zoom in. Scroll to move around.';
+  });
+  closeBtn.addEventListener('click', close);
+  box.addEventListener('click', function (e) { if (e.target === box || e.target.id === 'lightbox-stage') close(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !box.hidden) close(); });
+})();
+</script>
+<script>
+(function () {
+  var links = Array.prototype.slice.call(document.querySelectorAll('.toc a[href^="#"]'));
+  var pairs = links.map(function (a) { return { a: a, el: document.querySelector(a.getAttribute('href')) }; })
+                   .filter(function (p) { return p.el; });
+  if (!('IntersectionObserver' in window)) return;
+  var obs = new IntersectionObserver(function (entries) {
+    entries.forEach(function (en) {
+      if (en.isIntersecting) {
+        links.forEach(function (l) { l.classList.remove('active'); });
+        var hit = pairs.filter(function (p) { return p.el === en.target; })[0];
+        if (hit) hit.a.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-15% 0px -75% 0px' });
+  pairs.forEach(function (p) { obs.observe(p.el); });
+})();
+</script>
+
+</body>
+</html>
